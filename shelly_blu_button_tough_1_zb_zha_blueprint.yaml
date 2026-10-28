@@ -1,0 +1,97 @@
+blueprint:
+  name: Shelly BLU Button Tough 1 ZB - ZHA (6 pulsaciones)
+  description: >-
+    Asigna acciones desde la interfaz de Home Assistant al Shelly BLU Button
+    Tough 1 ZB conectado mediante ZHA. Admite una, dos y tres pulsaciones
+    cortas y una, dos y tres pulsaciones largas. Reconoce los comandos Zigbee
+    toggle y recall y los eventos attribute_updated que puede exponer ZHA.
+    Requiere que el boton este emparejado por Zigbee, no solo por Bluetooth.
+  domain: automation
+  input:
+    button_device:
+      name: Dispositivo Shelly BLU Button Tough 1 ZB
+      description: Elige el boton emparejado con Zigbee Home Automation (ZHA).
+      selector:
+        device:
+          integration: zha
+    short_1:
+      name: Una pulsacion corta
+      default: []
+      selector:
+        action: {}
+    short_2:
+      name: Dos pulsaciones cortas
+      default: []
+      selector:
+        action: {}
+    short_3:
+      name: Tres pulsaciones cortas
+      default: []
+      selector:
+        action: {}
+    long_1:
+      name: Una pulsacion larga
+      default: []
+      selector:
+        action: {}
+    long_2:
+      name: Dos pulsaciones largas
+      default: []
+      selector:
+        action: {}
+    long_3:
+      name: Tres pulsaciones largas
+      default: []
+      selector:
+        action: {}
+
+trigger:
+  - platform: event
+    event_type: zha_event
+    event_data:
+      device_id: !input button_device
+
+condition: []
+
+action:
+  - variables:
+      endpoint: "{{ trigger.event.data.get('endpoint_id', -1) | int(-1) }}"
+      cluster: "{{ trigger.event.data.get('cluster_id', -1) | int(-1) }}"
+      command: "{{ trigger.event.data.get('command', '') }}"
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ endpoint | int == 1 and cluster | int == 6
+                 and command in ['toggle', 'on', 'off', 'attribute_updated'] }}
+        sequence: !input short_1
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ endpoint | int == 2 and cluster | int == 6
+                 and command in ['toggle', 'on', 'off', 'attribute_updated'] }}
+        sequence: !input short_2
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ endpoint | int == 3 and cluster | int == 6
+                 and command in ['toggle', 'on', 'off', 'attribute_updated'] }}
+        sequence: !input short_3
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ endpoint | int == 1 and cluster | int == 5 and command == 'recall' }}
+        sequence: !input long_1
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ endpoint | int == 2 and cluster | int == 5 and command == 'recall' }}
+        sequence: !input long_2
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ endpoint | int == 3 and cluster | int == 5 and command == 'recall' }}
+        sequence: !input long_3
+mode: parallel
+max: 10
+max_exceeded: silent
